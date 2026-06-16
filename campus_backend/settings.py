@@ -39,6 +39,32 @@ ALLOWED_HOSTS = [
     if host.strip()
 ]
 
+RAILWAY_PUBLIC_DOMAIN = os.getenv(
+    "RAILWAY_PUBLIC_DOMAIN",
+    ""
+).strip()
+
+if (
+    RAILWAY_PUBLIC_DOMAIN
+    and RAILWAY_PUBLIC_DOMAIN not in ALLOWED_HOSTS
+):
+    ALLOWED_HOSTS.append(RAILWAY_PUBLIC_DOMAIN)
+
+
+CSRF_TRUSTED_ORIGINS = [
+    origin.strip()
+    for origin in os.getenv(
+        "DJANGO_CSRF_TRUSTED_ORIGINS",
+        ""
+    ).split(",")
+    if origin.strip()
+]
+
+if RAILWAY_PUBLIC_DOMAIN:
+    railway_origin = f"https://{RAILWAY_PUBLIC_DOMAIN}"
+
+    if railway_origin not in CSRF_TRUSTED_ORIGINS:
+        CSRF_TRUSTED_ORIGINS.append(railway_origin)
 
 # Application definition
 
@@ -57,6 +83,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -85,20 +112,34 @@ TEMPLATES = [
 WSGI_APPLICATION = 'campus_backend.wsgi.application'
 
 
-# Database
-# https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("MYSQL_DATABASE"),
-        "USER": os.getenv("MYSQL_USER"),
-        "PASSWORD": os.getenv("MYSQL_PASSWORD"),
-        "HOST": os.getenv("MYSQL_HOST", "127.0.0.1"),
-        "PORT": os.getenv("MYSQL_PORT", "3306"),
+
+        # Railway 使用不带下划线的变量名，
+        # 本地开发继续读取原来的变量名。
+        "NAME": (
+            os.getenv("MYSQLDATABASE")
+            or os.getenv("MYSQL_DATABASE")
+        ),
+        "USER": (
+            os.getenv("MYSQLUSER")
+            or os.getenv("MYSQL_USER")
+        ),
+        "PASSWORD": (
+            os.getenv("MYSQLPASSWORD")
+            or os.getenv("MYSQL_PASSWORD")
+        ),
+        "HOST": (
+            os.getenv("MYSQLHOST")
+            or os.getenv("MYSQL_HOST", "127.0.0.1")
+        ),
+        "PORT": (
+            os.getenv("MYSQLPORT")
+            or os.getenv("MYSQL_PORT", "3306")
+        ),
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -134,7 +175,19 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": (
+            "whitenoise.storage."
+            "CompressedManifestStaticFilesStorage"
+        ),
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -160,3 +213,19 @@ SPECTACULAR_SETTINGS = {
         "persistAuthorization": True,
     },
 }
+
+SECURE_PROXY_SSL_HEADER = (
+    "HTTP_X_FORWARDED_PROTO",
+    "https",
+)
+
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_SECURE = not DEBUG
+
+# 生产环境强制使用 HTTPS
+SECURE_SSL_REDIRECT = not DEBUG
+
+# 首次部署先使用较短的 HSTS 时间，确认线上 HTTPS 正常后再延长
+SECURE_HSTS_SECONDS = 3600 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+SECURE_HSTS_PRELOAD = False
