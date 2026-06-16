@@ -22,7 +22,6 @@ from .models import Task
 from .response import error_response, success_response
 from .serializers import task_to_dict, user_to_dict
 
-
 CREATE_TASK_REQUEST = inline_serializer(
     name="CreateTaskRequest",
     fields={
@@ -204,18 +203,21 @@ def task_list(request):
             code=400,
         )
 
-    tasks = Task.objects.select_related(
-        "publisher",
-        "receiver",
-    ).all().order_by("-created_at")
+    tasks = (
+        Task.objects.select_related(
+            "publisher",
+            "receiver",
+        )
+        .all()
+        .order_by("-created_at")
+    )
 
     if status:
         tasks = tasks.filter(status=status)
 
     if keyword:
         tasks = tasks.filter(
-            Q(title__contains=keyword)
-            | Q(description__contains=keyword)
+            Q(title__contains=keyword) | Q(description__contains=keyword)
         )
 
     total = tasks.count()
@@ -678,12 +680,16 @@ def my_task_list(request):
             code=401,
         )
 
-    tasks = Task.objects.select_related(
-        "publisher",
-        "receiver",
-    ).filter(
-        publisher=request.user,
-    ).order_by("-created_at")
+    tasks = (
+        Task.objects.select_related(
+            "publisher",
+            "receiver",
+        )
+        .filter(
+            publisher=request.user,
+        )
+        .order_by("-created_at")
+    )
 
     return success_response(
         data=[task_to_dict(task) for task in tasks],
@@ -765,12 +771,16 @@ def my_received_task_list(request):
             code=401,
         )
 
-    tasks = Task.objects.select_related(
-        "publisher",
-        "receiver",
-    ).filter(
-        receiver=request.user,
-    ).order_by("-created_at")
+    tasks = (
+        Task.objects.select_related(
+            "publisher",
+            "receiver",
+        )
+        .filter(
+            receiver=request.user,
+        )
+        .order_by("-created_at")
+    )
 
     return success_response(
         data=[task_to_dict(task) for task in tasks],

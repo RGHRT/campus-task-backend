@@ -180,9 +180,7 @@ class UserApiTests(TestCase):
 
         response = self.client.get(
             "/api/users/jwt/me/",
-            HTTP_AUTHORIZATION=(
-                f"Bearer {token_response.json()['access']}"
-            ),
+            HTTP_AUTHORIZATION=(f"Bearer {token_response.json()['access']}"),
         )
 
         self.assertEqual(response.status_code, 200)
