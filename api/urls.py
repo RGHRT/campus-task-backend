@@ -14,6 +14,7 @@ from .views import (
     register_user,
     login_user,
     current_user,
+    jwt_me,
     logout_user,
     my_received_task_list,
     my_task_list,
@@ -41,6 +42,7 @@ urlpatterns = [
     path('users/register/', register_user),
     path('users/login/', login_user),
     path('users/me/', current_user),
+    path('users/jwt/me/', jwt_me),
     path('users/logout/', logout_user),
 
     path(

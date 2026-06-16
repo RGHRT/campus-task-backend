@@ -221,6 +221,50 @@ class UserApiTests(TestCase):
         self.assertEqual(refresh_response.status_code, 200)
         self.assertIn("access", refresh_response.json())
 
+    def test_jwt_me_requires_token(self):
+        """测试未携带JWT时不能获取当前用户"""
+
+        response = self.client.get(
+            "/api/users/jwt/me/"
+        )
+
+        self.assertEqual(response.status_code, 401)
+
+
+    def test_jwt_me_returns_current_user(self):
+        """测试携带有效JWT时可以获取当前用户"""
+
+        User.objects.create_user(
+            username="jwt_me_user",
+            email="jwt_me_user@example.com",
+            password="JwtTest@123456",
+        )
+
+        token_response = self.client.post(
+            "/api/users/token/",
+            {
+                "username": "jwt_me_user",
+                "password": "JwtTest@123456",
+            },
+            content_type="application/json",
+        )
+
+        access_token = token_response.json()["access"]
+
+        response = self.client.get(
+            "/api/users/jwt/me/",
+            HTTP_AUTHORIZATION=f"Bearer {access_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+
+        self.assertEqual(response_data["code"], 200)
+        self.assertEqual(
+            response_data["data"]["username"],
+            "jwt_me_user",
+        )
 
 class TaskApiTests(TestCase):
 

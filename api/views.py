@@ -7,6 +7,9 @@ from django.db import transaction
 from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+
 from .models import Task
 from .response import success_response, error_response
 from .serializers import task_to_dict, user_to_dict
@@ -450,6 +453,14 @@ def current_user(request):
     return success_response(
         data=user_to_dict(request.user),
         message="获取当前用户成功"
+    )
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def jwt_me(request):
+    return success_response(
+        data=user_to_dict(request.user),
+        message="获取当前用户成功",
     )
 @csrf_exempt
 def logout_user(request):
