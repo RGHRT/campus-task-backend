@@ -1,5 +1,7 @@
 # Campus Task Backend
 
+[![Django CI](https://github.com/RGHRT/campus-task-backend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/RGHRT/campus-task-backend/actions/workflows/ci.yml)
+
 基于 Django 与 MySQL 开发的校园互助任务平台后端，为代取快递、资料打印、物品代购、校园跑腿等场景提供任务发布、接取、完成确认和状态管理功能。
 
 项目采用 JWT 进行接口身份认证，使用 Django ORM 操作 MySQL 数据库，并通过数据库事务与行级锁避免任务被重复接取。目前已完成 Swagger 接口文档、29 项自动化测试及 Railway 线上部署。
