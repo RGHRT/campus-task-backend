@@ -333,7 +333,58 @@ class TaskApiTests(TestCase):
             task.status,
             Task.Status.PENDING,
         )
-        
+
+    def test_accept_task_with_jwt_success(self):
+        """测试携带有效JWT可以接取任务"""
+
+        task = Task.objects.create(
+            publisher=self.publisher,
+            title="JWT接取测试任务",
+            description="测试使用JWT接取校园互助任务",
+            reward="5.00",
+            status=Task.Status.PENDING,
+        )
+
+        token_response = self.client.post(
+            "/api/users/token/",
+            {
+                "username": "receiver",
+                "password": "123456",
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(token_response.status_code, 200)
+
+        access_token = token_response.json()["access"]
+
+        response = self.client.post(
+            f"/api/tasks/{task.id}/accept/",
+            HTTP_AUTHORIZATION=f"Bearer {access_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+
+        self.assertEqual(response_data["code"], 200)
+        self.assertEqual(
+            response_data["data"]["receiver"]["username"],
+            "receiver",
+        )
+        self.assertEqual(
+            response_data["data"]["status"],
+            Task.Status.IN_PROGRESS,
+        )
+
+        task.refresh_from_db()
+
+        self.assertEqual(task.receiver, self.receiver)
+        self.assertEqual(
+            task.status,
+            Task.Status.IN_PROGRESS,
+        )
+
     def test_create_task_requires_login(self):
         """测试未登录用户不能发布任务"""
 

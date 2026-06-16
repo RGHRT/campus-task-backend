@@ -548,14 +548,22 @@ def my_task_list(request):
         data=task_data,
         message="获取我发布的任务成功"
     )
-@csrf_exempt
-def accept_task(request, task_id):
-    if request.method != "POST":
-        return error_response(
-            message="只允许使用 POST 请求",
-            code=405
-        )
+@extend_schema(
+    summary="接取任务",
+    description="登录用户接取一个尚未被其他用户接取的任务。",
+    tags=["任务"],
+    request=None,
+    responses={
+        200: OpenApiResponse(description="任务接取成功"),
+        401: OpenApiResponse(description="用户未登录或Token无效"),
+        403: OpenApiResponse(description="不能接取自己发布的任务"),
+        404: OpenApiResponse(description="任务不存在"),
+        409: OpenApiResponse(description="任务已被接取或状态不允许接取"),
+    },
+)
 
+@api_view(["POST"])
+def accept_task(request, task_id):
     if not request.user.is_authenticated:
         return error_response(
             message="请先登录",
@@ -603,6 +611,7 @@ def accept_task(request, task_id):
         data=task_to_dict(task),
         message="任务接取成功"
     )
+
 def my_received_task_list(request):
     if request.method != "GET":
         return error_response(
