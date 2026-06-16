@@ -164,6 +164,63 @@ class UserApiTests(TestCase):
         )
         self.assertIsNone(response_data["data"])
 
+    def test_jwt_token_obtain_success(self):
+        """测试使用用户名和密码获取JWT令牌"""
+
+        User.objects.create_user(
+            username="jwt_user",
+            email="jwt_user@example.com",
+            password="JwtTest@123456",
+        )
+
+        response = self.client.post(
+            "/api/users/token/",
+            {
+                "username": "jwt_user",
+                "password": "JwtTest@123456",
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+
+        self.assertIn("access", response_data)
+        self.assertIn("refresh", response_data)
+
+
+    def test_jwt_token_refresh_success(self):
+        """测试使用refresh令牌获取新的access令牌"""
+
+        User.objects.create_user(
+            username="jwt_refresh_user",
+            email="jwt_refresh_user@example.com",
+            password="JwtTest@123456",
+        )
+
+        token_response = self.client.post(
+            "/api/users/token/",
+            {
+                "username": "jwt_refresh_user",
+                "password": "JwtTest@123456",
+            },
+            content_type="application/json",
+        )
+
+        refresh_token = token_response.json()["refresh"]
+
+        refresh_response = self.client.post(
+            "/api/users/token/refresh/",
+            {
+                "refresh": refresh_token,
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(refresh_response.status_code, 200)
+        self.assertIn("access", refresh_response.json())
+
 
 class TaskApiTests(TestCase):
 
