@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Campus Task Backend API
-  version: 1.0.0
+  version: 1.1.0
   description: 校园互助任务平台后端接口文档
 paths:
   /api/hello/:

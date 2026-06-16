@@ -13,13 +13,22 @@ from drf_spectacular.utils import (
     inline_serializer,
 )
 from rest_framework import serializers
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    permission_classes,
+    throttle_classes,
+)
 from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
 
 from .models import Task
 from .response import error_response, success_response
 from .serializers import task_to_dict, user_to_dict
+from .throttles import (
+    LoginRateThrottle,
+    RegisterRateThrottle,
+    TaskCreateRateThrottle,
+)
 
 CREATE_TASK_REQUEST = inline_serializer(
     name="CreateTaskRequest",
@@ -293,6 +302,7 @@ def task_list(request):
     },
 )
 @api_view(["POST"])
+@throttle_classes([TaskCreateRateThrottle])
 def create_task(request):
     if not request.user.is_authenticated:
         return error_response(
@@ -544,6 +554,7 @@ def delete_task(request, task_id):
     },
 )
 @api_view(["POST"])
+@throttle_classes([RegisterRateThrottle])
 def register_user(request):
     try:
         data = request.data
@@ -604,6 +615,7 @@ def register_user(request):
     },
 )
 @api_view(["POST"])
+@throttle_classes([LoginRateThrottle])
 def login_user(request):
     try:
         data = request.data

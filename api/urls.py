@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import (
     TokenRefreshView,
 )
 
+from .throttles import LoginRateThrottle
 from .views import (
     accept_task,
     cancel_task,
@@ -44,7 +45,7 @@ urlpatterns = [
     path("users/logout/", logout_user),
     path(
         "users/token/",
-        TokenObtainPairView.as_view(),
+        TokenObtainPairView.as_view(throttle_classes=[LoginRateThrottle]),
         name="token_obtain_pair",
     ),
     path(
