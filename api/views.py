@@ -2,6 +2,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Q
 from drf_spectacular.utils import (
@@ -88,6 +89,25 @@ LOGIN_REQUEST = inline_serializer(
         ),
     },
 )
+
+TASK_LIST_CACHE_VERSION_KEY = "task_list:version"
+
+
+def get_task_list_cache_version():
+    return cache.get_or_set(
+        TASK_LIST_CACHE_VERSION_KEY,
+        1,
+        timeout=None,
+    )
+
+
+def invalidate_task_list_cache():
+    cache.add(
+        TASK_LIST_CACHE_VERSION_KEY,
+        1,
+        timeout=None,
+    )
+    cache.incr(TASK_LIST_CACHE_VERSION_KEY)
 
 
 def _parse_reward(value):
@@ -201,6 +221,24 @@ def task_list(request):
             code=400,
         )
 
+    cache_version = get_task_list_cache_version()
+
+    cache_key = (
+        f"task_list:v{cache_version}:"
+        f"{status or 'all'}:"
+        f"{keyword or 'all'}:"
+        f"{page}:"
+        f"{page_size}"
+    )
+
+    cached_data = cache.get(cache_key)
+
+    if cached_data is not None:
+        return success_response(
+            data=cached_data,
+            message="获取任务列表成功",
+        )
+
     tasks = (
         Task.objects.select_related(
             "publisher",
@@ -223,18 +261,27 @@ def task_list(request):
     end = start + page_size
     task_data = [task_to_dict(task) for task in tasks[start:end]]
 
+    response_data = {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "list": task_data,
+    }
+
+    cache.set(
+        cache_key,
+        response_data,
+        timeout=60,
+    )
+
     return success_response(
-        data={
-            "total": total,
-            "page": page,
-            "page_size": page_size,
-            "list": task_data,
-        },
+        data=response_data,
         message="获取任务列表成功",
     )
 
 
 @extend_schema(
+    operation_id="task_create",
     summary="发布任务",
     description="登录用户发布一个新的校园互助任务。",
     tags=["任务"],
@@ -242,7 +289,7 @@ def task_list(request):
     responses={
         200: OpenApiResponse(description="任务创建成功"),
         400: OpenApiResponse(description="请求参数错误"),
-        401: OpenApiResponse(description="用户未登录或Token无效"),
+        401: OpenApiResponse(description="用户未登录或 Token 无效"),
     },
 )
 @api_view(["POST"])
@@ -294,6 +341,8 @@ def create_task(request):
         reward=reward,
         status=Task.Status.PENDING,
     )
+
+    transaction.on_commit(invalidate_task_list_cache)
 
     return success_response(
         data=task_to_dict(task),
@@ -420,6 +469,8 @@ def update_task(request, task_id):
 
     task.save()
 
+    transaction.on_commit(invalidate_task_list_cache)
+
     return success_response(
         data=task_to_dict(task),
         message="任务修改成功",
@@ -474,6 +525,8 @@ def delete_task(request, task_id):
         )
 
     task.delete()
+
+    transaction.on_commit(invalidate_task_list_cache)
 
     return success_response(
         data=None,
@@ -747,6 +800,8 @@ def accept_task(request, task_id):
         task.status = Task.Status.IN_PROGRESS
         task.save(update_fields=["receiver", "status"])
 
+        transaction.on_commit(invalidate_task_list_cache)
+
     return success_response(
         data=task_to_dict(task),
         message="任务接取成功",
@@ -831,6 +886,8 @@ def complete_task(request, task_id):
         task.status = Task.Status.WAITING_CONFIRM
         task.save(update_fields=["status"])
 
+        transaction.on_commit(invalidate_task_list_cache)
+
     return success_response(
         data=task_to_dict(task),
         message="任务已提交完成，等待发布者确认",
@@ -881,6 +938,8 @@ def confirm_task(request, task_id):
 
         task.status = Task.Status.COMPLETED
         task.save(update_fields=["status"])
+
+        transaction.on_commit(invalidate_task_list_cache)
 
     return success_response(
         data=task_to_dict(task),
@@ -938,6 +997,8 @@ def cancel_task(request, task_id):
 
         task.status = Task.Status.CANCELLED
         task.save(update_fields=["status"])
+
+        transaction.on_commit(invalidate_task_list_cache)
 
     return success_response(
         data=task_to_dict(task),

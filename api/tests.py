@@ -1,9 +1,14 @@
 import json
 
 from django.contrib.auth.models import User
+from django.core.cache import cache
 from django.test import TestCase
 
 from .models import Task
+from .views import (
+    get_task_list_cache_version,
+    invalidate_task_list_cache,
+)
 
 
 class UserApiTests(TestCase):
@@ -721,4 +726,34 @@ class TaskApiTests(TestCase):
         self.assertEqual(
             data["list"][0]["status"],
             Task.Status.PENDING,
+        )
+
+    def test_task_list_cache_and_version_invalidation(self):
+        cache.clear()
+
+        response = self.client.get(
+            "/api/tasks/",
+            {
+                "page": 1,
+                "page_size": 5,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        cache_version = get_task_list_cache_version()
+        cache_key = f"task_list:v{cache_version}:all:all:1:5"
+
+        cached_data = cache.get(cache_key)
+
+        self.assertIsNotNone(cached_data)
+        self.assertEqual(cached_data, response.json()["data"])
+
+        invalidate_task_list_cache()
+
+        new_cache_version = get_task_list_cache_version()
+
+        self.assertEqual(
+            new_cache_version,
+            cache_version + 1,
         )

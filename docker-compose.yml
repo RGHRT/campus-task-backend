@@ -22,6 +22,18 @@ services:
       retries: 10
       start_period: 30s
 
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
   web:
     build: .
     command: >
@@ -33,16 +45,22 @@ services:
       DJANGO_DEBUG: "True"
       DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1"
       DJANGO_CSRF_TRUSTED_ORIGINS: "http://localhost:8002,http://127.0.0.1:8002"
+
       MYSQL_DATABASE: "campus_tasks"
       MYSQL_USER: "campus_user"
       MYSQL_PASSWORD: "campus_password"
       MYSQL_HOST: "db"
       MYSQL_PORT: "3306"
+
+      REDIS_URL: "redis://redis:6379/1"
     ports:
       - "8002:8000"
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   mysql_data:
+  redis_data:
