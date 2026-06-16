@@ -283,6 +283,57 @@ class TaskApiTests(TestCase):
             email="receiver@example.com"
         )
 
+    def test_create_task_with_jwt_success(self):
+        """测试携带有效JWT可以发布任务"""
+
+        token_response = self.client.post(
+            "/api/users/token/",
+            {
+                "username": "publisher",
+                "password": "123456",
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(token_response.status_code, 200)
+
+        access_token = token_response.json()["access"]
+
+        response = self.client.post(
+            "/api/tasks/create/",
+            {
+                "title": "JWT测试任务",
+                "description": "测试使用JWT发布校园互助任务",
+                "reward": "5.00",
+            },
+            content_type="application/json",
+            HTTP_AUTHORIZATION=f"Bearer {access_token}",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        response_data = response.json()
+
+        self.assertEqual(response_data["code"], 200)
+        self.assertEqual(
+            response_data["data"]["title"],
+            "JWT测试任务",
+        )
+        self.assertEqual(
+            response_data["data"]["publisher"]["username"],
+            "publisher",
+        )
+
+        task = Task.objects.get(
+            id=response_data["data"]["id"]
+        )
+
+        self.assertEqual(task.publisher, self.publisher)
+        self.assertEqual(
+            task.status,
+            Task.Status.PENDING,
+        )
+        
     def test_create_task_requires_login(self):
         """测试未登录用户不能发布任务"""
 

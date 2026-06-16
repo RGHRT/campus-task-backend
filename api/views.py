@@ -8,7 +8,10 @@ from django.db.models import Q
 from django.views.decorators.csrf import csrf_exempt
 
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
+
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 
 from .models import Task
 from .response import success_response, error_response
@@ -88,14 +91,8 @@ def task_list(request):
         message="获取任务列表成功"
     )
 
-@csrf_exempt
+@api_view(["POST"])
 def create_task(request):
-    if request.method != "POST":
-        return error_response(
-            message="只允许使用 POST 请求",
-            code=405
-        )
-
     if not request.user.is_authenticated:
         return error_response(
             message="请先登录后再发布任务",
@@ -103,8 +100,8 @@ def create_task(request):
         )
 
     try:
-        data = json.loads(request.body.decode("utf-8"))
-    except json.JSONDecodeError:
+        data = request.data
+    except ParseError:
         return error_response(
             message="请求体不是合法的 JSON",
             code=400
@@ -455,6 +452,15 @@ def current_user(request):
         message="获取当前用户成功"
     )
 
+@extend_schema(
+    summary="获取当前JWT用户",
+    description="携带有效的 Access Token，获取当前登录用户的信息。",
+    tags=["用户"],
+    responses={
+        200: OpenApiResponse(description="获取当前用户成功"),
+        401: OpenApiResponse(description="未登录、Token无效或Token已过期"),
+    },
+)
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def jwt_me(request):
@@ -462,6 +468,7 @@ def jwt_me(request):
         data=user_to_dict(request.user),
         message="获取当前用户成功",
     )
+
 @csrf_exempt
 def logout_user(request):
     if request.method != "POST":
