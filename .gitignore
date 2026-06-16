@@ -26,3 +26,4 @@ htmlcov/
 
 # Django 收集的静态文件
 staticfiles/
+.ruff_cache/
