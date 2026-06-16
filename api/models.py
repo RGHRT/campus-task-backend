@@ -15,7 +15,7 @@ class Task(models.Model):
         on_delete=models.CASCADE,
         related_name="published_tasks",
         null=True,
-        blank=True
+        blank=True,
     )
 
     receiver = models.ForeignKey(
@@ -23,28 +23,20 @@ class Task(models.Model):
         on_delete=models.SET_NULL,
         related_name="received_tasks",
         null=True,
-        blank=True
+        blank=True,
     )
 
     title = models.CharField(max_length=100)
 
     description = models.TextField()
 
-    reward = models.DecimalField(
-        max_digits=8,
-        decimal_places=2,
-        default=0
-    )
+    reward = models.DecimalField(max_digits=8, decimal_places=2, default=0)
 
     status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.PENDING
+        max_length=20, choices=Status.choices, default=Status.PENDING
     )
 
-    created_at = models.DateTimeField(
-        auto_now_add=True
-    )
+    created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title

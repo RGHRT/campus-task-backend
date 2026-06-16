@@ -4,12 +4,6 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db import transaction
 from django.db.models import Q
-
-from rest_framework import serializers
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ParseError
-from rest_framework.permissions import IsAuthenticated
-
 from drf_spectacular.utils import (
     OpenApiParameter,
     OpenApiResponse,
@@ -17,11 +11,14 @@ from drf_spectacular.utils import (
     extend_schema,
     inline_serializer,
 )
+from rest_framework import serializers
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ParseError
+from rest_framework.permissions import IsAuthenticated
 
 from .models import Task
 from .response import error_response, success_response
 from .serializers import task_to_dict, user_to_dict
-
 
 CREATE_TASK_REQUEST = inline_serializer(
     name="CreateTaskRequest",
@@ -204,18 +201,21 @@ def task_list(request):
             code=400,
         )
 
-    tasks = Task.objects.select_related(
-        "publisher",
-        "receiver",
-    ).all().order_by("-created_at")
+    tasks = (
+        Task.objects.select_related(
+            "publisher",
+            "receiver",
+        )
+        .all()
+        .order_by("-created_at")
+    )
 
     if status:
         tasks = tasks.filter(status=status)
 
     if keyword:
         tasks = tasks.filter(
-            Q(title__contains=keyword)
-            | Q(description__contains=keyword)
+            Q(title__contains=keyword) | Q(description__contains=keyword)
         )
 
     total = tasks.count()
@@ -678,12 +678,16 @@ def my_task_list(request):
             code=401,
         )
 
-    tasks = Task.objects.select_related(
-        "publisher",
-        "receiver",
-    ).filter(
-        publisher=request.user,
-    ).order_by("-created_at")
+    tasks = (
+        Task.objects.select_related(
+            "publisher",
+            "receiver",
+        )
+        .filter(
+            publisher=request.user,
+        )
+        .order_by("-created_at")
+    )
 
     return success_response(
         data=[task_to_dict(task) for task in tasks],
@@ -765,12 +769,16 @@ def my_received_task_list(request):
             code=401,
         )
 
-    tasks = Task.objects.select_related(
-        "publisher",
-        "receiver",
-    ).filter(
-        receiver=request.user,
-    ).order_by("-created_at")
+    tasks = (
+        Task.objects.select_related(
+            "publisher",
+            "receiver",
+        )
+        .filter(
+            receiver=request.user,
+        )
+        .order_by("-created_at")
+    )
 
     return success_response(
         data=[task_to_dict(task) for task in tasks],

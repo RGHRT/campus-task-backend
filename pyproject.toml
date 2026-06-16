@@ -1,0 +1,29 @@
+[tool.black]
+line-length = 88
+target-version = ["py311"]
+include = '\.pyi?$'
+
+extend-exclude = '''
+/(
+    migrations
+  | \.venv
+  | staticfiles
+)/
+'''
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+exclude = [
+    "api/migrations",
+    ".venv",
+    "staticfiles",
+]
+
+[tool.ruff.lint]
+select = [
+    "E4",
+    "E7",
+    "E9",
+    "F",
+    "I",
+]
