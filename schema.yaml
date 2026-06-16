@@ -1,0 +1,582 @@
+openapi: 3.0.3
+info:
+  title: Campus Task Backend API
+  version: 1.0.0
+  description: 校园互助任务平台后端接口文档
+paths:
+  /api/hello/:
+    get:
+      operationId: hello_retrieve
+      summary: 接口连通性测试
+      tags:
+      - 系统
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 请求成功
+  /api/tasks/:
+    get:
+      operationId: tasks_list
+      description: 支持按状态筛选、关键词搜索和分页查询。
+      summary: 获取任务列表
+      parameters:
+      - in: query
+        name: keyword
+        schema:
+          type: string
+        description: 在任务标题和描述中搜索关键词
+      - in: query
+        name: page
+        schema:
+          type: integer
+        description: 页码，默认1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+        description: 每页数量，默认5
+      - in: query
+        name: status
+        schema:
+          type: string
+        description: 任务状态，例如：未完成、进行中、待确认、已完成、已取消
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 获取任务列表成功
+        '400':
+          description: 分页参数错误
+  /api/tasks/{task_id}/:
+    get:
+      operationId: tasks_retrieve
+      summary: 获取任务详情
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 获取任务详情成功
+        '404':
+          description: 任务不存在
+  /api/tasks/{task_id}/accept/:
+    post:
+      operationId: tasks_accept_create
+      description: 登录用户接取一个尚未被其他用户接取的任务。
+      summary: 接取任务
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 任务接取成功
+        '401':
+          description: 用户未登录或Token无效
+        '403':
+          description: 不能接取自己发布的任务
+        '404':
+          description: 任务不存在
+        '409':
+          description: 任务已被接取或状态不允许接取
+  /api/tasks/{task_id}/cancel/:
+    post:
+      operationId: tasks_cancel_create
+      description: 任务发布者取消尚未被接取的未完成任务。
+      summary: 取消任务
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 任务取消成功
+        '401':
+          description: 用户未登录或Token无效
+        '403':
+          description: 当前用户不是任务发布者
+        '404':
+          description: 任务不存在
+        '409':
+          description: 任务已被接取或状态不允许取消
+  /api/tasks/{task_id}/complete/:
+    post:
+      operationId: tasks_complete_create
+      description: 任务接单者提交任务完成，提交后等待发布者确认。
+      summary: 提交任务完成
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 任务已提交完成，等待发布者确认
+        '401':
+          description: 用户未登录或Token无效
+        '403':
+          description: 当前用户不是该任务的接单者
+        '404':
+          description: 任务不存在
+        '409':
+          description: 任务不是进行中状态
+  /api/tasks/{task_id}/confirm/:
+    post:
+      operationId: tasks_confirm_create
+      description: 任务发布者确认接单者已经完成任务。
+      summary: 确认任务完成
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 任务已确认完成
+        '401':
+          description: 用户未登录或Token无效
+        '403':
+          description: 当前用户不是任务发布者
+        '404':
+          description: 任务不存在
+        '409':
+          description: 任务不是待确认状态
+  /api/tasks/{task_id}/delete/:
+    delete:
+      operationId: tasks_delete_destroy
+      description: 只有发布者可以删除已经取消且没有接单者的任务。
+      summary: 删除任务
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 任务删除成功
+        '401':
+          description: 用户未登录或Token无效
+        '403':
+          description: 只能删除自己发布的任务
+        '404':
+          description: 任务不存在
+        '409':
+          description: 当前任务不能删除
+  /api/tasks/{task_id}/update/:
+    put:
+      operationId: tasks_update_update
+      description: 只有发布者可以修改尚未被接取的未完成任务。
+      summary: 修改任务
+      parameters:
+      - in: path
+        name: task_id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - 任务
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 任务修改成功
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 用户未登录或Token无效
+        '403':
+          description: 只能修改自己发布的任务
+        '404':
+          description: 任务不存在
+        '409':
+          description: 当前任务不能修改
+  /api/tasks/create/:
+    post:
+      operationId: tasks_create_create
+      description: 登录用户发布一个新的校园互助任务。
+      summary: 发布任务
+      tags:
+      - 任务
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 任务创建成功
+        '400':
+          description: 请求参数错误
+        '401':
+          description: 用户未登录或Token无效
+  /api/tasks/mine/:
+    get:
+      operationId: tasks_mine_retrieve
+      summary: 获取我发布的任务
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 获取我发布的任务成功
+        '401':
+          description: 用户未登录或Token无效
+  /api/tasks/received/:
+    get:
+      operationId: tasks_received_retrieve
+      summary: 获取我接取的任务
+      tags:
+      - 任务
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 获取我接取的任务成功
+        '401':
+          description: 用户未登录或Token无效
+  /api/users/jwt/me/:
+    get:
+      operationId: users_jwt_me_retrieve
+      description: 携带有效的 Access Token，获取当前登录用户的信息。
+      summary: 获取当前JWT用户
+      tags:
+      - 用户
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: 获取当前用户成功
+        '401':
+          description: 未登录、Token无效或Token已过期
+  /api/users/login/:
+    post:
+      operationId: users_login_create
+      description: 保留给旧客户端和Django Session测试使用；前后端分离建议使用JWT登录接口。
+      summary: Session登录
+      tags:
+      - 用户
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SessionLoginRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SessionLoginRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SessionLoginRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 用户登录成功
+        '400':
+          description: 用户名或密码错误
+  /api/users/logout/:
+    post:
+      operationId: users_logout_create
+      description: 清除当前Session。JWT令牌不会因此失效。
+      summary: 退出Session登录
+      tags:
+      - 用户
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 退出登录成功
+        '401':
+          description: 用户未登录
+  /api/users/me/:
+    get:
+      operationId: users_me_retrieve
+      description: 支持JWT或Session认证。
+      summary: 获取当前用户
+      tags:
+      - 用户
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 获取当前用户成功
+        '401':
+          description: 用户未登录
+  /api/users/register/:
+    post:
+      operationId: users_register_create
+      summary: 用户注册
+      tags:
+      - 用户
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: 用户注册成功
+        '400':
+          description: 注册参数错误
+  /api/users/token/:
+    post:
+      operationId: users_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /api/users/token/refresh/:
+    post:
+      operationId: users_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+components:
+  schemas:
+    CreateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: 任务标题
+          maxLength: 100
+        description:
+          type: string
+          description: 任务详细描述
+        reward:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          default: '0.00'
+          description: 任务报酬，最多保留两位小数
+      required:
+      - description
+      - title
+    RegisterRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: 用户名
+        password:
+          type: string
+          writeOnly: true
+          description: 密码，至少6位
+          minLength: 6
+        email:
+          type: string
+          format: email
+          description: 邮箱
+      required:
+      - password
+      - username
+    SessionLoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          description: 用户名
+        password:
+          type: string
+          writeOnly: true
+          description: 密码
+      required:
+      - password
+      - username
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    UpdateTaskRequest:
+      type: object
+      properties:
+        title:
+          type: string
+          description: 新的任务标题
+          maxLength: 100
+        description:
+          type: string
+          description: 新的任务描述
+        reward:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
+          description: 新的任务报酬
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
