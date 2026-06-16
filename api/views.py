@@ -11,7 +11,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ParseError
 from rest_framework.permissions import IsAuthenticated
 
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import (
+    OpenApiResponse,
+    extend_schema,
+    inline_serializer,
+)
+from rest_framework import serializers
 
 from .models import Task
 from .response import success_response, error_response
@@ -90,7 +95,35 @@ def task_list(request):
         data=data,
         message="获取任务列表成功"
     )
-
+@extend_schema(
+    summary="发布任务",
+    description="登录用户发布一个新的校园互助任务。",
+    tags=["任务"],
+    request=inline_serializer(
+        name="CreateTaskRequest",
+        fields={
+            "title": serializers.CharField(
+                max_length=100,
+                help_text="任务标题",
+            ),
+            "description": serializers.CharField(
+                help_text="任务详细描述",
+            ),
+            "reward": serializers.DecimalField(
+                max_digits=8,
+                decimal_places=2,
+                required=False,
+                default=0,
+                help_text="任务报酬，最多保留两位小数",
+            ),
+        },
+    ),
+    responses={
+        200: OpenApiResponse(description="任务创建成功"),
+        400: OpenApiResponse(description="请求参数错误"),
+        401: OpenApiResponse(description="用户未登录或Token无效"),
+    },
+)
 @api_view(["POST"])
 def create_task(request):
     if not request.user.is_authenticated:
