@@ -258,7 +258,7 @@ paths:
           description: 当前任务不能修改
   /api/tasks/create/:
     post:
-      operationId: tasks_create_create
+      operationId: task_create
       description: 登录用户发布一个新的校园互助任务。
       summary: 发布任务
       tags:
@@ -285,7 +285,7 @@ paths:
         '400':
           description: 请求参数错误
         '401':
-          description: 用户未登录或Token无效
+          description: 用户未登录或 Token 无效
   /api/tasks/mine/:
     get:
       operationId: tasks_mine_retrieve
