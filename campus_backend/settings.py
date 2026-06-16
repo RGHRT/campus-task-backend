@@ -166,12 +166,17 @@ REST_FRAMEWORK = {
         "rest_framework.authentication.SessionAuthentication",
     ),
     "DEFAULT_SCHEMA_CLASS": ("drf_spectacular.openapi.AutoSchema"),
+    "DEFAULT_THROTTLE_RATES": {
+        "login": "10/min",
+        "register": "5/hour",
+        "task_create": "5/min",
+    },
 }
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Campus Task Backend API",
     "DESCRIPTION": "校园互助任务平台后端接口文档",
-    "VERSION": "1.0.0",
+    "VERSION": "1.1.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_SETTINGS": {
         "persistAuthorization": True,
@@ -193,8 +198,6 @@ SECURE_SSL_REDIRECT = not DEBUG
 SECURE_HSTS_SECONDS = 3600 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = False
 SECURE_HSTS_PRELOAD = False
-
-REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/1")
 
 TESTING = "test" in sys.argv
 REDIS_URL = os.getenv("REDIS_URL", "").strip()
